@@ -2,26 +2,63 @@ import { useState } from "react";
 import GameBoard from "./components/GameBoard";
 import Player from "./components/Player";
 import Log from "./components/Log";
+import { WINNING_COMBINATIONS } from "../winning-combinations";
+import Gameover from "./components/Gameover";
 
+const Initialstate = [
+  [null, null, null],
+  [null, null, null],
+  [null, null, null],
+];
+
+function derivedplayer(gameturns) {
+  let currentplayer = "X";
+  if (gameturns.length > 0 && gameturns[0].player == "X") {
+    currentplayer = "O";
+  }
+  return currentplayer;
+}
 function App() {
-  const [activeplayer, setactiveplayer] = useState("X");
   const [gameturns, setgameturns] = useState([]);
+  const activeplayer = derivedplayer(gameturns);
+  let gameboard = [...Initialstate.map((innerarray) => [...innerarray])];
+
+  for (const turn of gameturns) {
+    const { square, player } = turn;
+    const { row, col } = square;
+    gameboard[row][col] = player;
+  }
+  // const [activeplayer, setactiveplayer] = useState("X");
+  let winner;
+  for (const winning of WINNING_COMBINATIONS) {
+    const firstsquaresymbol = gameboard[winning[0].row][winning[0].column];
+    const secondsquaresymbol = gameboard[winning[1].row][winning[1].column];
+    const thirdsquresynbol = gameboard[winning[2].row][winning[2].column];
+
+    if (
+      firstsquaresymbol &&
+      firstsquaresymbol == secondsquaresymbol &&
+      firstsquaresymbol == thirdsquresynbol
+    ) {
+      winner = firstsquaresymbol;
+    }
+  }
+  const handlerematch = () => {
+    setgameturns([]);
+  };
 
   const handleactiveplayer = (rowindex, colindex) => {
-    setactiveplayer((current) => (current === "X" ? "O" : "X"));
     setgameturns((prevturns) => {
-      let currenplayer = "X";
-      if (prevturns.length > 0 && prevturns[0].player === "X") {
-        currenplayer = "O";
-      }
+      const currentplayer = derivedplayer(prevturns);
       const updatedturn = [
-        { square: { row: rowindex, col: colindex }, player: currenplayer },
+        { square: { row: rowindex, col: colindex }, player: currentplayer },
         ...prevturns,
       ];
+      return updatedturn;
     });
-    return updatedturn;
   };
-  console.log(activeplayer);
+  const isdraw = gameturns.length == 9 && !winner;
+
   return (
     <main>
       <div id="game-container">
@@ -37,11 +74,11 @@ function App() {
             isActive={activeplayer === "O"}
           />
         </ol>
-        <GameBoard
-          Onselectsquare={handleactiveplayer}
-          activeplayersymbol={activeplayer}
-        />
-        <Log />
+        {(winner || isdraw) && (
+          <Gameover winner={winner} setrematch={handlerematch} />
+        )}
+        <GameBoard Onselectsquare={handleactiveplayer} board={gameboard} />
+        <Log turns={gameturns} />
       </div>
     </main>
   );
